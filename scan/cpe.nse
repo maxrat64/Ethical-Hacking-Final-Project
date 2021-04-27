@@ -16,35 +16,66 @@ categories = {"safe", "version"}
 portrule = function(host, port)
 
     -- See if the host has classes that could have a cpe
-    return host.os ~= nil
+    local host_cpe = host.os ~= nil
         and #host.os > 0
         and host.os[1].classes ~= nil
         and #host.os[1].classes > 0
         and host.os[1].classes[1] ~= nil
+
+    local service_cpe = port.version ~= nil
+        and port.version.cpe ~= nil
+
+    return host_cpe or service_cpe
+end
+
+dohosttab = function(host, output)
+
+    -- Loops through each os guess
+    if (host.os ~= nil) then
+    for _, os_guess in pairs(host.os) do
+
+        -- Loops through matching class for the os guess
+        if (os_guess.classes ~= nil) then
+        for _, class in pairs(os_guess.classes) do
+
+            -- Loops through each cpe match for the matching class
+            if (class.cpe ~= nil) then
+            for _, class_cpe in pairs(class.cpe) do
+                output.host_cpes[#output.host_cpes + 1] = class_cpe
+            end
+            end
+        end
+        end
+    end
+    end
+end
+
+doservicetab = function(port, output)
+
+    -- Loops through each version cpe
+    if (port.version ~= nil and port.version.cpe ~= nil) then
+    for _, cpe in pairs(port.version.cpe) do
+        output.port_cpes[#output.port_cpes + 1] = cpe
+    end
+    end
+
 end
 
 action = function(host, port)
     
-    
     -- Final output
     output = stdnse.output_table()
 
+    -- Info about host
     output.host = host.ip
-    output.cpes = {}
+    
+    -- Host cpes
+    output.host_cpes = {}
+    dohosttab(host, output)
 
-    -- Loops through each os guess
-    for _, os_guess in pairs(host.os) do
-
-        -- Loops through matching class for the os guess
-        for _, class in pairs(os_guess.classes) do
-
-            -- Loops through each cpe match for the matching class
-            for _, class_cpe in pairs(class.cpe) do
-                output.cpes[#output.cpes + 1] = class_cpe
-            end
-        end
-    end
-
+    -- Port cpes
+    output.port_cpes = {}
+    doservicetab(port, output)
+    
     return output
-
 end
