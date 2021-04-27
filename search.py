@@ -35,15 +35,20 @@ def _getCVEData(name: str) -> dict:
     idPath = idNum[:-3] + "xxx"
     path = f'./cvelist/{year}/{idPath}/{name}.json'
 
-    result = {"name": name, "year": int(year), "numerical_id": int(idNum)}
-    with open(path) as f:
-        data = json.load(f)
-        description = data["description"]["description_data"][0]["value"]
-        references = []
-        if data["CVE_data_meta"]["STATE"] == "PUBLIC":
-            for entry in data["references"]["reference_data"]:
-                references.append(entry["url"])
-        result.update({"description": description, "references": references})
+    result = {"name": name, "year": int(year), "numerical_id": int(idNum),
+              "description": "N/A", "references": []}
+    try:
+        with open(path) as f:
+            data = json.load(f)
+            description = data["description"]["description_data"][0]["value"]
+            references = []
+            if data["CVE_data_meta"]["STATE"] == "PUBLIC":
+                for entry in data["references"]["reference_data"]:
+                    references.append(entry["url"])
+            result.update({"description": description, "references": references})
+    except:
+        pass
+
     return result
 
 def search(query: str) -> list[dict]:
