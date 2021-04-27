@@ -9,21 +9,28 @@ from urllib.parse import quote
 # using this instead?
 # https://csrc.nist.gov/CSRC/media/Projects/National-Vulnerability-Database/documents/web%20service%20documentation/Automation%20Support%20for%20CVE%20Retrieval.pdf
 
+_databaseUpdated = False
+
 def updateDatabase():
     """
     Updates the database from the git repo. This should be called when the
     program is initiallized!
     """
+    global _databaseUpdated
     if (os.path.isdir("./cvelist")):
         os.system("cd ./cvelist; git pull")
     else:
         os.system("git clone https://github.com/CVEProject/cvelist.git")
+
+    _databaseUpdated = True
 
 def _getNVDData(name: str) -> dict:
     # TODO: Scrape data from NVD (url obtained in CVD webpage)
     return dict()
 
 def _getCVEData(name: str) -> dict:
+    assert _databaseUpdated == True, "Need to call updateDatabase() first!"
+
     _, year, idNum = name.split("-")
     idPath = idNum[:-3] + "xxx"
     path = f'./cvelist/{year}/{idPath}/{name}.json'
@@ -53,7 +60,6 @@ def searchIter(query: str):
         for _ in range(20):
             print(next(iter))
     """
-
     url = "https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=" + quote(query)
     page = requests.get(url)
     soup = BeautifulSoup(page.text, "html.parser")
