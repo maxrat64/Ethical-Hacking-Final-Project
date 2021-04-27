@@ -40,8 +40,9 @@ def _getCVEData(name: str) -> dict:
         data = json.load(f)
         description = data["description"]["description_data"][0]["value"]
         references = []
-        for entry in data["references"]["reference_data"]:
-            references.append(entry["url"])
+        if data["CVE_data_meta"]["STATE"] == "PUBLIC":
+            for entry in data["references"]["reference_data"]:
+                references.append(entry["url"])
         result.update({"description": description, "references": references})
     return result
 
