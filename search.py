@@ -1,40 +1,41 @@
+import os
 import requests
+import json
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 
-def _getNVDData(url: str) -> dict:
+# TODO: After finishing most of the web scraper, I discovered an API from NIST
+# that might be better than web scraping. Maybe I should implement search
+# using this instead?
+# https://csrc.nist.gov/CSRC/media/Projects/National-Vulnerability-Database/documents/web%20service%20documentation/Automation%20Support%20for%20CVE%20Retrieval.pdf
+
+def updateDatabase():
+    """
+    Updates the database from the git repo. This should be called when the
+    program is initiallized!
+    """
+    if (os.path.isdir("./cvelist")):
+        os.system("cd ./cvelist; git pull")
+    else:
+        os.system("git clone https://github.com/CVEProject/cvelist.git")
+
+def _getNVDData(name: str) -> dict:
     # TODO: Scrape data from NVD (url obtained in CVD webpage)
     return dict()
 
-def _getCVEData(url: str) -> dict:
-    page = requests.get(url)
-    soup = BeautifulSoup(page.text, "html.parser")
-    table = soup.find_all("table")[2].contents
+def _getCVEData(name: str) -> dict:
+    _, year, idNum = name.split("-")
+    idPath = idNum[:-3] + "xxx"
+    path = f'./cvelist/{year}/{idPath}/{name}.json'
 
-    NAME_IDX = 3
-    DESC_IDX = 7
-    REF_IDX = 13
-    CNA_IDX = 17
-    DATE_IDX = 21
-
-    name = table[NAME_IDX].find("h2").text
-
-    # print(table[NAME_IDX])
-
-    description = table[DESC_IDX].contents[1].text.strip()
-
-    references = []
-    tags_references = table[REF_IDX].contents[1].find_all("a")
-    for tag in tags_references:
-        references.append(tag.text)
-
-    cna_assigned = table[CNA_IDX].contents[1].text
-    date_assigned = table[DATE_IDX].contents[1].text
-
-    result = {"name": name, "description" : description, \
-            "references" : references, "cna": cna_assigned, \
-            "date": date_assigned}
-    result.update(_getNVDData(""))
+    result = {"name": name, "year": int(year), "numerical_id": int(idNum)}
+    with open(path) as f:
+        data = json.load(f)
+        description = data["description"]["description_data"][0]["value"]
+        references = []
+        for entry in data["references"]["reference_data"]:
+            references.append(entry["url"])
+        result.update({"description": description, "references": references})
     return result
 
 def search(query: str) -> list[dict]:
@@ -42,13 +43,13 @@ def search(query: str) -> list[dict]:
 
 def searchIter(query: str):
     """
-    Use this method to return an iterator for results. Useful for cases with a very
-    large amount of results that would take too long to load before displaying
-    data. This can be useful for implementing pagination where you want to load x
+    Use this method to get an iterator/generator for results.
+    This can be useful for implementing pagination where you want to load x
     results at a time.
+    This is also useful for queries with a very large amount of results.
 
-    Example - Printing the first 20 results:
-        iter = searchIter("test")
+    Example - Printing the next 20 results of searching "apache":
+        iter = searchIter("apache")
         for _ in range(20):
             print(next(iter))
     """
@@ -62,9 +63,6 @@ def searchIter(query: str):
         for td in child:
             if hasattr(td, "a"):
                 if td.a != None:
-                    ext = td.a.get("href")
-                    url = "https://cve.mitre.org" + ext
-                    data = _getCVEData(url)
+                    name = td.a.text
+                    data = _getCVEData(name)
                     yield data
-
-# print(_getCVEData("https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-29262"))
