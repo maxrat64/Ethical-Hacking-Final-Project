@@ -28,20 +28,59 @@ portrule = function(host, port)
     return host_cpe or service_cpe
 end
 
-dohosttab = function(host, output)
+postrule = function()
+    return true
+end
+
+
+populate_services = function(host, port)
+
+    local ip = host.ip
+    local portlabel = port.protocol .. port.number
+
+    -- Create table for the host if it doesn't already exist
+    if (nmap.registry.cpe_info[ip] == nil) then
+        nmap.registry.cpe_info[ip] = {}
+    end
+
+    -- Create table for this port number
+    nmap.registry.cpe_info[ip][portlabel] = {}
+
+    -- Make alias for port info
+    local output = nmap.registry.cpe_info[ip][portlabel]
+
+    -- Loops through each version cpe and copies to out
+    if (port.version ~= nil and port.version.cpe ~= nil) then
+    for _, cpe in pairs(port.version.cpe) do
+        output[#output + 1] = cpe
+    end
+    end
+end
+
+populate_os = function(host)
+
+
+    -- Previously checked that cpe_info table is created in services
+
+    -- Create OS table for this host if not already created
+    if (nmap.registry.cpe_info[host.ip].OS == nil) then
+        nmap.registry.cpe_info[host.ip].OS = {}
+    end
+
+    local output = nmap.registry.cpe_info[host.ip].OS
 
     -- Loops through each os guess
     if (host.os ~= nil) then
     for _, os_guess in pairs(host.os) do
 
-        -- Loops through matching class for the os guess
+        -- Loops through matching classes for the os guess
         if (os_guess.classes ~= nil) then
         for _, class in pairs(os_guess.classes) do
 
             -- Loops through each cpe match for the matching class
             if (class.cpe ~= nil) then
             for _, class_cpe in pairs(class.cpe) do
-                output.host_cpes[#output.host_cpes + 1] = class_cpe
+                output[#output + 1] = class_cpe
             end
             end
         end
@@ -50,32 +89,20 @@ dohosttab = function(host, output)
     end
 end
 
-doservicetab = function(port, output)
-
-    -- Loops through each version cpe
-    if (port.version ~= nil and port.version.cpe ~= nil) then
-    for _, cpe in pairs(port.version.cpe) do
-        output.port_cpes[#output.port_cpes + 1] = cpe
-    end
-    end
-
-end
 
 action = function(host, port)
-    
-    -- Final output
-    output = stdnse.output_table()
 
-    -- Info about host
-    output.host = host.ip
+    -- If giving host CPEs
+    if (SCRIPT_TYPE == "postrule") then
+        stdnse.pretty_printer(nmap.registry.cpe_info, io.write)
+        return nmap.registry.cpe_info
+    end
     
-    -- Host cpes
-    output.host_cpes = {}
-    dohosttab(host, output)
+    if (nmap.registry.cpe_info == nil) then
+        nmap.registry.cpe_info = {}
+    end
+    
+    populate_services(host, port)
+    populate_os(host)
 
-    -- Port cpes
-    output.port_cpes = {}
-    doservicetab(port, output)
-    
-    return output
 end
