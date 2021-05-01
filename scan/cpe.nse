@@ -94,7 +94,6 @@ action = function(host, port)
 
     -- If giving host CPEs
     if (SCRIPT_TYPE == "postrule") then
-        stdnse.pretty_printer(nmap.registry.cpe_info, io.write)
         return nmap.registry.cpe_info
     end
     
