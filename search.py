@@ -1,80 +1,49 @@
-import os
 import requests
 import json
-from bs4 import BeautifulSoup
-from urllib.parse import quote
 
-# TODO: After finishing most of the web scraper, I discovered an API from NIST
-# that might be better than web scraping. Maybe I should implement search
-# using this instead?
-# https://csrc.nist.gov/CSRC/media/Projects/National-Vulnerability-Database/documents/web%20service%20documentation/Automation%20Support%20for%20CVE%20Retrieval.pdf
-
-_databaseUpdated = False
-
-def updateDatabase():
+def search(cpe_uri: str, num_results=None, start_index=0) -> list[dict]:
     """
-    Updates the database from the git repo. This should be called when the
-    program is initiallized!
+    Takes in a CPE URI to search for matching vulnerabilities. Returns a list
+    of dictionaries pertaining to CVEs.
+
+    Includes some optional parameters for convienience:
+        num_results = the number of results returned.
+        start_index = the result to start pulling entries from.
+    If neither are specified, returns all results possible.
+
+    Each dictionary object contains string keys. These include name, description,
+    references, and impact.
+        dict["id"] = id/name of CVE
+        dict["description"] = description of CVE
+        dict["references"] = a list of URLs as reference
+        dict["impact"] = a dict containing data pertaining to severity ratings,
+                         vector strings, etc. Details on the dict can be found
+                         on page 20-21 of the NVD API documentation:
+                         https://nvd.nist.gov/vuln/data-feeds
+                         NOTE: this is not always availiable,
+                         and if not found will contain None.
     """
-    global _databaseUpdated
-    if (os.path.isdir("./cvelist")):
-        os.system("cd ./cvelist; git pull")
-    else:
-        os.system("git clone https://github.com/CVEProject/cvelist.git")
+    endpoint = "https://services.nvd.nist.gov/rest/json/cves/1.0?addons=dictionaryCpes?cpeMatchString=" + cpe_uri
+    endpoint += "?startIndex=" + str(start_index)
+    if num_results != None:
+        endpoint += "?resultsPerPage=" + str(num_results)
 
-    _databaseUpdated = True
+    rq = requests.get(endpoint)
+    response = json.loads(rq.text)
 
-def _getNVDData(name: str) -> dict:
-    # TODO: Scrape data from NVD (url obtained in CVD webpage)
-    return dict()
+    cve_items = response["result"]["CVE_Items"]
 
-def _getCVEData(name: str) -> dict:
-    assert _databaseUpdated == True, "Need to call updateDatabase() first!"
-
-    _, year, idNum = name.split("-")
-    idPath = idNum[:-3] + "xxx"
-    path = f'./cvelist/{year}/{idPath}/{name}.json'
-
-    result = {"name": name, "year": int(year), "numerical_id": int(idNum),
-              "description": "N/A", "references": []}
-    try:
-        with open(path) as f:
-            data = json.load(f)
-            description = data["description"]["description_data"][0]["value"]
-            references = []
-            if data["CVE_data_meta"]["STATE"] == "PUBLIC":
-                for entry in data["references"]["reference_data"]:
-                    references.append(entry["url"])
-            result.update({"description": description, "references": references})
-    except:
-        pass
+    result = []
+    for item in cve_items:
+        cve = item["cve"]
+        entry = dict()
+        entry["id"] = cve["CVE_data_meta"]["ID"]
+        entry["description"] = cve["description"]["description_data"][0]["value"]
+        entry["references"] = [e["url"] for e in cve["references"]["reference_data"]]
+        try:
+            entry["impact"] = item["impact"]
+        except KeyError:
+            entry["impact"] = None
+        result.append(entry)
 
     return result
-
-def search(query: str) -> list[dict]:
-    return [cve for cve in searchIter(query)]
-
-def searchIter(query: str):
-    """
-    Use this method to get an iterator/generator for results.
-    This can be useful for implementing pagination where you want to load x
-    results at a time.
-    This is also useful for queries with a very large amount of results.
-
-    Example - Printing the next 20 results of searching "apache":
-        iter = searchIter("apache")
-        for _ in range(20):
-            print(next(iter))
-    """
-    url = "https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=" + quote(query)
-    page = requests.get(url)
-    soup = BeautifulSoup(page.text, "html.parser")
-    table = soup.find_all("table")[2]
-
-    for child in table.children:
-        for td in child:
-            if hasattr(td, "a"):
-                if td.a != None:
-                    name = td.a.text
-                    data = _getCVEData(name)
-                    yield data
