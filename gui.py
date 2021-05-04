@@ -1,63 +1,83 @@
 from tkinter import *
 
-# tutorial - https://realpython.com/python-gui-tkinter/#controlling-layout-with-geometry-managers
 
+def display(d):
+    cpes = {}
+    # parse input
+    for ip in d.keys():
+        ip_block = d[ip]
+        for port in ip_block.keys():
+            port_block = ip_block[port]
+            for spec in port_block.keys():
+                result_dict = port_block[spec]
+                if spec in cpes.keys():
+                    cpes[spec]["ips"].append(str(ip) + ":" + str(port))
+                else:
+                    cpes[spec] = {}
+                    cpes[spec]["ips"] = [str(ip) + ":" + str(port)]
+                    cpes[spec]["results"] = result_dict
 
-def display(cves):
     # create root window
     window = Tk()
-    window.title("<TITLE HERE>")
-    window.geometry("900x500")
+    window.title("Vulnerama")
+    window.geometry("1200x500")
     scrollbar = Scrollbar(window)
     scrollbar.pack(side=LEFT, fill=Y)
 
     # populate listbox
     listbox = Listbox(window, yscrollcommand=scrollbar.set, width=50)
-    for cve in cves:
-        listbox.insert(END, str(cve["id"]))
-    listbox.pack(side=LEFT, fill=BOTH)
+    for cpe in cpes.keys():
+        listbox.insert(END, str(cpe))
+        listbox.pack(side=LEFT, fill=BOTH)
     scrollbar.config(command=listbox.yview)
 
-    # initialize frame to display selected entry
+    # initialize frame to display default entry
     frame = Frame(master=window)
     frame.pack()
-    cur_id = Label(master=frame, text=cves[0]["id"])
+    cpes_keys = cpes.keys()
+    value_iterator = iter(cpes_keys)
+    default_cpe = next(value_iterator)
+    default_entry = cpes[default_cpe]
+    cur_id = Label(master=frame, text=str(default_cpe))
     cur_id.pack()
-    cur_desc = Label(master=frame, text=cves[0]["description"], wraplength=500)
+    ips_text = "IP:port pairs running service: \n"
+    for ip in default_entry["ips"][:-1]:
+        ips_text = ips_text + ip + "\n"
+    ips_text = ips_text + default_entry["ips"][-1]
+    cur_ips = Label(master=frame, text=ips_text, wraplength=500)
+    cur_ips.pack()
+    desc_text = ""
+    desc_text = desc_text + "Number of vulnerabilities: " + \
+        str(default_entry["results"]["n_vulns"]) + "\n"
+    desc_text = desc_text + "Highest CVSS severity score: " + \
+        str(default_entry["results"]["max"]) + "\n"
+    desc_text = desc_text + "Average CVSS severity score: " + \
+        str(round(default_entry["results"]["avg"], 1)) + "\n"
+    desc_text = desc_text + "Learn more: " + default_entry["results"]["url"]
+    cur_desc = Label(master=frame, text=desc_text, wraplength=500)
     cur_desc.pack()
-    refs_text = ""
-    for ref in cves[0]["references"][:-1]:
-        refs_text = refs_text + ref + "\n"
-    refs_text = refs_text + cves[0]["references"][-1]
-    cur_ref = Label(master=frame, text=refs_text, wraplength=500)
-    cur_ref.pack()
-    if cves[0]["impact"] != None:
-        cur_imp = Label(master=frame, text=cves[0]["impact"], wraplength=500)
-    else:
-        cur_imp = Label(master=frame, text="N/A")
-    cur_imp.pack()
 
-    # repopulate display when a new CVE is selected
+    # repopulate display when a new CPE is selected
+
     def select(evt):
-        cve = str(listbox.get(listbox.curselection()))
-        for i in range(len(cves)):
-            if cves[i]["id"] == cve:
-                break
-        new_id = cve
-        new_desc = cves[i]["description"]
-        new_refs_text = ""
-        for ref in cves[i]["references"][:-1]:
-            new_refs_text = new_refs_text + ref + "\n"
-        new_refs_text = new_refs_text + cves[i]["references"][-1]
-        if cves[i]["impact"] != None:
-            new_imp = cves[i]["impact"]
-        else:
-            new_imp = "N/A"
-        cur_id.config(text=new_id)
+        new_cpe = str(listbox.get(listbox.curselection()))
+        new_entry = cpes[new_cpe]
+        cur_id.config(text=new_cpe)
+        new_ips = "IP:port pairs running service: \n"
+        for ip in new_entry["ips"][:-1]:
+            new_ips = new_ips + ip + "\n"
+        new_ips = new_ips + new_entry["ips"][-1]
+        cur_ips.config(text=new_ips)
+        new_desc = ""
+        new_desc = new_desc + "Number of vulnerabilities: " + \
+            str(new_entry["results"]["n_vulns"]) + "\n"
+        new_desc = new_desc + "Highest CVSS severity score: " + \
+            str(new_entry["results"]["max"]) + "\n"
+        new_desc = new_desc + "Average CVSS severity score: " + \
+            str(round(new_entry["results"]["avg"], 1)) + "\n"
+        new_desc = new_desc + "Learn more: " + new_entry["results"]["url"]
         cur_desc.config(text=new_desc)
-        cur_ref.config(text=new_refs_text)
-        cur_imp.config(text=new_imp)
-            
+
     listbox.bind('<<ListboxSelect>>', select)
 
     window.mainloop()
