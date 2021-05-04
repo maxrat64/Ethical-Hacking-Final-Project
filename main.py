@@ -3,7 +3,8 @@
 # imports (local)
 import vals
 from scan_utils import setup_input
-from scan import do_scan
+from scan import do_scan, print_table
+from gui import display
 
 # imports (py modules)
 import sys
@@ -26,6 +27,8 @@ if __name__ == '__main__':
         d = manager.dict()
         l = manager.Lock()
 
+        # p = Process(target=display, args=(d, l))
+
         # make a process for each input
         for addr_input in addr_inputs:
             p = Process(target=do_scan, args=(addr_input, d, l, manager))
@@ -35,4 +38,7 @@ if __name__ == '__main__':
         # join processses to end
         for p in procs:
             p.join()
+        
+        print_table(d)
+        
     
