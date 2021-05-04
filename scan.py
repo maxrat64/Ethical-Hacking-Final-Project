@@ -11,11 +11,13 @@ base_cmd = ['nmap', '-n', '--open', '-sV', '--script=cpe.nse', '-O', '-oX', '-']
 
 def print_table(d):
 
-    for ip_block in d:
-        for port_block in d[ip_block]:
-            for spec in d[ip_block][port_block]:
-                result_dict = d[ip_block][port_block][spec]
-                print("%s, %s, %s: %s" % (ip_block, port_block, spec, result_dict))
+    for ip in d.keys():
+        ip_block = d[ip]
+        for port in ip_block.keys():
+            port_block = ip_block[port]
+            for spec in port_block.keys():
+                result_dict = port_block[spec]
+                print("%s, %s, %s: %s" % (ip, port, spec, result_dict))
 
 def add_cpe(cpe, d, l, man):
 
