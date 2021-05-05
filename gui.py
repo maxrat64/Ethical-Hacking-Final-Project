@@ -13,7 +13,7 @@ def display(d, l):
 
     def populate():
         listbox.delete(0, END)
-        print("here")
+        print("populating data")
         with l:
             # parse input
             for ip in d.keys():
@@ -23,7 +23,9 @@ def display(d, l):
                     for spec in port_block.keys():
                         result_dict = port_block[spec]
                         if spec in cpes.keys():
-                            cpes[spec]["ips"].append(str(ip) + ":" + str(port))
+                            host_port = str(ip) + ":" + str(port)
+                            if host_port not in cpes[spec]["ips"]:
+                                cpes[spec]["ips"].append(str(ip) + ":" + str(port))
                         else:
                             cpes[spec] = {}
                             cpes[spec]["ips"] = [str(ip) + ":" + str(port)]
