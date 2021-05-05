@@ -22,18 +22,17 @@ def display(d, l):
         new_desc = new_desc + "Average CVSS severity score: " + \
             str(round(new_entry["results"]["avg"], 1)) + "\n"
         desc.config(text=new_desc)
-	url_button = Button(master=frame, text="Learn More", command=open_url)
-	url_button.pack()
-
+        url_button = Button(master=frame, text="Learn More", command=open_url)
+        url_button.pack()
 
     def open_url():
-        cpe = cur_id.cget("text")
+        cpe = header.cget("text")
         url = cpes[cpe]["results"]["url"]
         webbrowser.open(url)
 
     def populate():
         listbox.delete(0, END)
-	cpe = {}
+        cpe = {}
         with l:
             # parse input
             for ip in d.keys():
@@ -54,14 +53,14 @@ def display(d, l):
             listbox.insert(END, str(cpe))
         window.after(5000, populate)
 
-
     # create root window
     window = Tk()
     window.title("Vulnerama")
     window.geometry("1200x500")
     scrollbar = Scrollbar(window)
     scrollbar.pack(side=LEFT, fill=Y)
-    listbox = Listbox(window, yscrollcommand=scrollbar.set, width=50, font=("Consolas", 20))
+    listbox = Listbox(window, yscrollcommand=scrollbar.set,
+                      width=50, font=("Consolas", 12))
 
     cpes = {}
     populate()
@@ -74,15 +73,17 @@ def display(d, l):
     cpes_keys = cpes.keys()
     value_iterator = iter(cpes_keys)
     header_text = "Vulnerama"
-    header = Label(master=frame, text=str(header_text), font=("Consolas", 30))
+    header = Label(master=frame, text=str(header_text), font=("Consolas", 20))
     header.pack()
 
     ips_text = "Select a CPE from the list"
-    ips = Label(master=frame, text=ips_text, wraplength=500, font=("Consolas", 20))
+    ips = Label(master=frame, text=ips_text,
+                wraplength=500, font=("Consolas", 15))
     ips.pack()
 
     desc_text = "<Waiting for selection>"
-    desc = Label(master=frame, text=desc_text, wraplength=500, font=("Consolas", 20))
+    desc = Label(master=frame, text=desc_text,
+                 wraplength=500, font=("Consolas", 15))
     desc.pack()
 
     listbox.bind('<<ListboxSelect>>', select)
