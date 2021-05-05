@@ -10,7 +10,7 @@ def display(d, l):
         new_cpe = str(listbox.get(listbox.curselection()))
         new_entry = cpes[new_cpe]
         header.config(text=new_cpe)
-        new_ips = "IP:port pairs running service: \n"
+        new_ips = "IP:port/OS pairs running service: \n"
         for ip in new_entry["ips"][:-1]:
             new_ips = new_ips + ip + "\n"
         new_ips = new_ips + new_entry["ips"][-1]
