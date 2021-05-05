@@ -6,6 +6,7 @@ def display(d, l):
 
     # repopulate display when a new CPE is selected
     def select(evt):
+        url_button["state"] = "normal"
         new_cpe = str(listbox.get(listbox.curselection()))
         new_entry = cpes[new_cpe]
         header.config(text=new_cpe)
@@ -23,6 +24,7 @@ def display(d, l):
             str(round(new_entry["results"]["avg"], 1)) + "\n"
         desc.config(text=new_desc)
 
+    # open selected url
     def open_url():
         cpe = header.cget("text")
         url = cpes[cpe]["results"]["url"]
@@ -66,7 +68,6 @@ def display(d, l):
     cpes = {}
     populate()
     listbox.pack(side=LEFT, fill=BOTH)
-    listbox.bind('<<ListboxSelect>>', select)
     scrollbar.config(command=listbox.yview)
 
     # initialize frame to display default entry
@@ -88,7 +89,10 @@ def display(d, l):
                  wraplength=500, font=("Consolas", 15))
     desc.pack()
 
-    url_button = Button(master=frame, text="Learn More", command=open_url)
+    url_button = Button(master=frame, text="Learn More",
+                        command=open_url, state="disabled")
     url_button.pack()
+
+    listbox.bind('<<ListboxSelect>>', select)
 
     window.mainloop()
