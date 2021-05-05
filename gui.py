@@ -30,7 +30,7 @@ def display(d, l):
 
     def populate():
         listbox.delete(0, END)
-        cpe = {}
+        # cpes = {}
         with l:
             # parse input
             for ip in d.keys():
@@ -40,7 +40,9 @@ def display(d, l):
                     for spec in port_block.keys():
                         result_dict = port_block[spec]
                         if spec in cpes.keys():
-                            cpes[spec]["ips"].append(str(ip) + ":" + str(port))
+                            pair = str(ip) + ":" + str(port)
+                            if pair not in cpes[spec]["ips"]:
+                                cpes[spec]["ips"].append(pair)
                         else:
                             cpes[spec] = {}
                             cpes[spec]["ips"] = [str(ip) + ":" + str(port)]
@@ -49,6 +51,7 @@ def display(d, l):
         # populate listbox
         for cpe in cpes.keys():
             listbox.insert(END, str(cpe))
+
         window.after(5000, populate)
 
     # create root window
@@ -87,6 +90,5 @@ def display(d, l):
 
     url_button = Button(master=frame, text="Learn More", command=open_url)
     url_button.pack()
-    
 
     window.mainloop()
