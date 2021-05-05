@@ -36,8 +36,12 @@ if __name__ == '__main__':
             procs.append(p)
             p.start()
 
-        # join processses to end
-        for p in procs:
-            p.join()
+	gui.join()
 
-        gui.join()
+        # terminate running processes
+        for p in procs:
+            p.terminate()
+
+	exit()
+		
+
