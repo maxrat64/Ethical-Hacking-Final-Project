@@ -81,6 +81,7 @@ def parse_xml(stream, cpes, d, l, man):
                 trip = (ip, port, cpe.text)
                 if trip not in cpes:
                     add_cpe(trip, d, l, man)
+                    cpes.add(trip)
 
 
 # Called by main which spawns a process and executes this function
