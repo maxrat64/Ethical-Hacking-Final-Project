@@ -27,7 +27,8 @@ if __name__ == '__main__':
         d = manager.dict()
         l = manager.Lock()
 
-        # p = Process(target=display, args=(d, l))
+        gui = Process(target=display, args=(d, l))
+        gui.start()
 
         # make a process for each input
         for addr_input in addr_inputs:
@@ -38,7 +39,5 @@ if __name__ == '__main__':
         # join processses to end
         for p in procs:
             p.join()
-        
-        display(d)
-        
-    
+
+        gui.join()
