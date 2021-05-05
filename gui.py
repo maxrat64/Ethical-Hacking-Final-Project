@@ -1,6 +1,37 @@
 from tkinter import *
 import webbrowser
+import os
+import subprocess
+import pwd
+from multiprocessing import Process
+import vals
 
+def demote(url):
+
+    # Get environment
+    env = os.environ.copy()
+    user_name = env["SUDO_USER"]
+
+    # Change environment to use user's info
+    pw_record = pwd.getpwnam(user_name)
+    user_name      = pw_record.pw_name
+    user_home_dir  = pw_record.pw_dir
+    user_uid       = pw_record.pw_uid
+    user_gid       = pw_record.pw_gid
+    env['HOME']  = user_home_dir
+    env['LOGNAME']  = user_name
+    env['USER']  = user_name
+
+    # Set gid, uid
+    os.setgid(user_gid)
+    os.setuid(user_uid)
+
+    # Open browser with the given URL
+    subprocess.Popen([vals.browser_cmd, url], env=env)
+
+def open_browser_sudo(url):
+    p=Process(target=demote, args=(url,))
+    p.start()
 
 def display(d, l):
 
@@ -28,7 +59,10 @@ def display(d, l):
     def open_url():
         cpe = header.cget("text")
         url = cpes[cpe]["results"]["url"]
-        webbrowser.open(url)
+        if "SUDO_USER" in os.environ:
+            open_browser_sudo(url)
+        else:
+            webbrowser.open(url)
 
     def populate():
         listbox.delete(0, END)
