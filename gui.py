@@ -22,8 +22,6 @@ def display(d, l):
         new_desc = new_desc + "Average CVSS severity score: " + \
             str(round(new_entry["results"]["avg"], 1)) + "\n"
         desc.config(text=new_desc)
-        url_button = Button(master=frame, text="Learn More", command=open_url)
-        url_button.pack()
 
     def open_url():
         cpe = header.cget("text")
@@ -65,6 +63,7 @@ def display(d, l):
     cpes = {}
     populate()
     listbox.pack(side=LEFT, fill=BOTH)
+    listbox.bind('<<ListboxSelect>>', select)
     scrollbar.config(command=listbox.yview)
 
     # initialize frame to display default entry
@@ -86,6 +85,8 @@ def display(d, l):
                  wraplength=500, font=("Consolas", 15))
     desc.pack()
 
-    listbox.bind('<<ListboxSelect>>', select)
+    url_button = Button(master=frame, text="Learn More", command=open_url)
+    url_button.pack()
+    
 
     window.mainloop()
