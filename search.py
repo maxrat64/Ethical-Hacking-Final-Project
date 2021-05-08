@@ -1,49 +1,34 @@
+#!/usr/bin/env python3
+
+from bs4 import BeautifulSoup
+from statistics import mean
 import requests
-import json
 
-def search(cpe_uri: str, num_results=None, start_index=0) -> list[dict]:
-    """
-    Takes in a CPE URI to search for matching vulnerabilities. Returns a list
-    of dictionaries pertaining to CVEs.
+url="https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_version="
 
-    Includes some optional parameters for convienience:
-        num_results = the number of results returned.
-        start_index = the result to start pulling entries from.
-    If neither are specified, returns all results possible.
+def getCVEData(cpe_info):
 
-    Each dictionary object contains string keys. These include name, description,
-    references, and impact.
-        dict["id"] = id/name of CVE
-        dict["description"] = description of CVE
-        dict["references"] = a list of URLs as reference
-        dict["impact"] = a dict containing data pertaining to severity ratings,
-                         vector strings, etc. Details on the dict can be found
-                         on page 20-21 of the NVD API documentation:
-                         https://nvd.nist.gov/vuln/data-feeds
-                         NOTE: this is not always availiable,
-                         and if not found will contain None.
-    """
-    endpoint = "https://services.nvd.nist.gov/rest/json/cves/1.0?addons=dictionaryCpes?cpeMatchString=" + cpe_uri
-    endpoint += "?startIndex=" + str(start_index)
-    if num_results != None:
-        endpoint += "?resultsPerPage=" + str(num_results)
+    # Create request url
+    request_url = url + cpe_info
 
-    rq = requests.get(endpoint)
-    response = json.loads(rq.text)
+    # Get response from server
+    page = requests.get(request_url)
 
-    cve_items = response["result"]["CVE_Items"]
+    # Make bs from the response
+    soup = BeautifulSoup(page.text, "html.parser")
 
-    result = []
-    for item in cve_items:
-        cve = item["cve"]
-        entry = dict()
-        entry["id"] = cve["CVE_data_meta"]["ID"]
-        entry["description"] = cve["description"]["description_data"][0]["value"]
-        entry["references"] = [e["url"] for e in cve["references"]["reference_data"]]
-        try:
-            entry["impact"] = item["impact"]
-        except KeyError:
-            entry["impact"] = None
-        result.append(entry)
+    # Get number of vulnerabilities
+    n_vulns_att = soup.find(attrs={"data-testid":"vuln-matching-records-count"})
+    n_vulns_txt = n_vulns_att.text.replace(",", "")
+    n_vulns = int(n_vulns_txt)
 
-    return result
+    # Get CVSS severity scores
+    scores = []
+    for i in range(20):
+        val = "vuln-cvss2-link-" + str(i)
+        cvss_score = soup.find(attrs={"data-testid": val})
+        if cvss_score is not None:
+            raw_score = cvss_score.text.split(" ")[0]
+            scores.append(float(raw_score))
+    
+    return (request_url, n_vulns, max(scores), mean(scores))
